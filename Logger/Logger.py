@@ -1,8 +1,6 @@
-import time
-import datetime
-import os
 import pandas as pd
-
+import time
+import sys
 
 class AverageMeter(object):
     """Sum values to compute the mean."""
@@ -23,29 +21,17 @@ class AverageMeter(object):
 class MetricsLogger(object):
     """Track the values of different metrics, display their average values and save them
     in a log file."""
-    def __init__(self, log_name=None):        
-        # Make name of log file
-        if log_name is None:
-            log_name = ''
-        else:
-            log_name = log_name + '_'
-        
-        dt_str = '_'.join(str(datetime.datetime.now()).split('.')[0].split(' '))
-        dt_str = dt_str.replace('-', '').replace(':', '')
-        self.log_filename = log_name + dt_str + ".log"
-        
-        # Make logs directory if necessary
-        if '/' not in self.log_filename:
-            log_dir = "logs"
-            if not os.path.isdir(log_dir):
-                os.mkdir(log_dir)
-            self.log_filename = os.path.join(log_dir, self.log_filename)
-        
-        # Initialize average meters
+    def __init__(self):            
+        self.log_df = pd.DataFrame()
+        self.n = 0
         self.reset()
     
     def reset(self):
         """Reset the metrics average meters."""
+        # Save last epoch average value of metrics (unless it's the first epoch)
+        if self.n > 1:
+            self.log_df = self.log_df.append(self._average(), ignore_index=True)
+        self.n += 1
         self.avgmeters = {}
         self.last_update = time.time()
     
@@ -58,14 +44,6 @@ class MetricsLogger(object):
             
         if show:
             self._show()
-            
-    def save_log(self):
-        """Write current average value of each metrics in a text file."""
-        with open(self.log_filename, 'a') as f:
-            f.write(str(self) + '\n')
-            
-    def get_log_df(self):
-        return Get_log_df(self.log_filename)
     
     def _average(self):
         return {key: self.avgmeters[key].average() for key in self.avgmeters}
@@ -78,46 +56,6 @@ class MetricsLogger(object):
     def _show(self, t_thresh=0.1):
         t_now = time.time()
         if t_now - self.last_update >= t_thresh:
-            print(str(self), end='\r', flush=True)
+            sys.stdout.write("\r" + str(self))
+            sys.stdout.flush()
             self.last_update = t_now
-            
-def Get_log_df(log_filename):
-    """Return the content of a log file as a Dataframe."""
-    # Open and read log file
-    with open(log_filename, 'r') as f:
-        logs = f.read()
-
-    # Get keys appearing in log file and convert each line into dict
-    keys = []
-    log_list_of_dict = []
-    for l in logs.split('\n'):
-        kvs = l.split(' - ')
-        line_dict = {}
-
-        for kv in kvs:
-            if ':' in kv:
-                k, v = kv.split(': ')
-                line_dict[k] = float(v)
-
-                if k not in keys:
-                    keys.append(k)
-
-        if len(line_dict) > 0:
-            log_list_of_dict.append(line_dict)
-
-    # Make dictionnary of list of values
-    log_dict_of_list = {}
-    for k in keys:
-        log_dict_of_list[k] = []
-
-    # Append values to lists
-    for line_dict in log_list_of_dict:
-        for k in keys:
-            if k in line_dict:
-                log_dict_of_list[k].append(line_dict[k])
-            else:
-                log_dict_of_list[k].append(None)
-
-    # Make dataframe
-    log_df = pd.DataFrame(log_dict_of_list)
-    return log_df

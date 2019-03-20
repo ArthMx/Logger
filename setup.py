@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='logger',
-    version='0.0.1',
+    version='0.0.2',
     author='Arthur Moraux',
     author_email='arthur.moraux@gmail.com',
     description='A logger utility for tracking metrics values during training of pyTorch models.',
