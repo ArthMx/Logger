@@ -29,7 +29,7 @@ class MetricsLogger(object):
     def reset(self):
         """Reset the metrics average meters."""
         # Save last epoch average value of metrics (unless it's the first epoch)
-        if self.n > 1:
+        if self.n > 0:
             self.log_df = self.log_df.append(self._average(), ignore_index=True)
         self.n += 1
         self.avgmeters = {}
@@ -44,6 +44,10 @@ class MetricsLogger(object):
             
         if show:
             self._show()
+    
+    def save_log(self, path):
+        """Save log dataframe to path."""
+        self.log_df.to_csv(path, index=False)
     
     def _average(self):
         return {key: self.avgmeters[key].average() for key in self.avgmeters}
